@@ -30,7 +30,7 @@ class Parser:
 
 if __name__ == '__main__':
     base_url = 'https://www.ptt.cc/'
-    start_url = 'https://www.ptt.cc/bbs/movie/index3.html'
+    start_url = 'https://www.ptt.cc/bbs/movie/index.html'
     parser = Parser()
 
     url = start_url
