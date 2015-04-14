@@ -1,6 +1,8 @@
 import urllib2
 import json
 from bs4 import BeautifulSoup
+import argparse
+import os
 
 class Parser:
     def __init__(self):
@@ -32,12 +34,22 @@ class Parser:
 if __name__ == '__main__':
     base_url = 'https://www.ptt.cc/'
     start_url = 'https://www.ptt.cc/bbs/movie/index.html'
+
+    argument = argparse.ArgumentParser()
+    argument.add_argument("--filename", help="export filename")
+    argument.add_argument("--dirname", help="export directory")
+    args = argument.parse_args()
+
     parser = Parser()
+
+    if not os.path.exists(args.dirname):
+        os.mkdir(args.dirname)
 
     url = start_url
     while True:
         parser.get_article(url)
-        with open('raw.txt', 'w') as outfile:
+
+        with open(os.path.join(args.dirname, args.filename), 'w') as outfile:
             json.dump(parser.raw_data, outfile)
         next_url = parser.get_previous_page_url(url)
         if next_url == None:
