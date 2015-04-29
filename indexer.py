@@ -37,6 +37,9 @@ class Indexer:
             if search_type in ('positive', 'negative', 'others'):
                 for result in self.forward_index[keyword_utf8][search_type]:
                     print "Title {}, Link {}".format(result[1].encode('utf-8'), result[0].encode('utf-8'))
+                return self.forward_index[keyword_utf8][search_type]
+            elif search_type in ('all'):
+                return self.forward_index[keyword_utf8]
         else:
             return None
 
