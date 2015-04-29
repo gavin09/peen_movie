@@ -12,10 +12,21 @@
 {% block content %}
 <div class='container'>
     <h1>Results [{{query}}]</h1>
-    <ul>
-        {% for result in search_results['positive'] %}
-        <li><a href="{{result[0].encode('utf-8')}}">{{result[1]}}</a></li>
-        {% endfor %}
-    </ul>
+    <div class="row">
+        <div class="col-md-6">
+           <ul>
+                {% for result in search_results['positive'] %}
+                    <li><a href="https://www.ptt.cc/{{result[0].encode('utf-8')}}">{{result[1]}}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <ul>
+                {% for result in search_results['negative'] %}
+                    <li><a href="https://www.ptt.cc/{{result[0].encode('utf-8')}}">{{result[1]}}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
 </div>
 {% endblock %}
