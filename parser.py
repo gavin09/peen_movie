@@ -93,5 +93,5 @@ if __name__ == '__main__':
                 break
             except:
                 continue
-        if page % 10 is 0:
+        if threading.active_count() > 20:
             time.sleep(1)
