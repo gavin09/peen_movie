@@ -3,13 +3,36 @@ import json
 from bs4 import BeautifulSoup
 import argparse
 import os
+import threading
+import re
+import time
 
-class Parser:
-    def __init__(self):
+class Parser(threading.Thread):
+    def __init__(self, url, dirname, filename, filelock):
+        threading.Thread.__init__(self)
         self.raw_data = []
+        self.url = url
+        self.dirname = dirname
+        self.filename = filename
+        self.filelock = filelock
+
+    def run(self):
+        self.get_article(self.url)
+        self.save_article(self.dirname, self.filename)
+        print 'Done: ' + self.url
 
     def get_article(self, url):
-        req = urllib2.urlopen(url)
+        while True:
+            try:
+                req = urllib2.urlopen(url)
+                break
+            except  urllib2.HTTPError:
+                continue
+            except urllib2.URLError:
+                continue
+            else:
+                continue
+
         html = req.read()
         soup = BeautifulSoup(html)
         articles = soup.find_all('div', class_='title')
@@ -20,19 +43,34 @@ class Parser:
                 title_utf8 = title.encode('utf-8')
                 self.raw_data.append((url, title_utf8))
 
-    def get_previous_page_url(self, url):
-        req = urllib2.urlopen(url)
-        html = req.read()
-        soup = BeautifulSoup(html)
-        pre_btn = soup.find_all('a', class_='btn')[3]
+    def save_article(self, dirname, filename):
+        self.filelock.acquire()
+        with open(os.path.join(dirname, filename), 'a') as outfile:
+            json.dump(self.raw_data, outfile)
+            outfile.close()
+        self.filelock.release()
 
-        if 'disabled' in soup.find_all('a', class_='btn')[3]['class']:
-            return None
-        print pre_btn['href']
-        return pre_btn['href']
+
+def get_page_number(url):
+    req = urllib2.urlopen(url)
+    html = req.read()
+    soup = BeautifulSoup(html)
+    pre_btn = soup.find_all('a', class_='btn')[3]
+
+    if 'disabled' in soup.find_all('a', class_='btn')[3]['class']:
+        return None
+
+    print pre_btn['href']
+    prev_url_str = str(pre_btn['href'])
+    print re.search('\d+', prev_url_str).group()
+    pre_page_num = int(re.search('\d+', prev_url_str).group())
+    total = pre_page_num + 1
+    return total
+
+def get_page_url(page):
+    return 'https://www.ptt.cc/bbs/movie/index' + str(page) + '.html'
 
 if __name__ == '__main__':
-    base_url = 'https://www.ptt.cc/'
     start_url = 'https://www.ptt.cc/bbs/movie/index.html'
 
     argument = argparse.ArgumentParser()
@@ -40,19 +78,20 @@ if __name__ == '__main__':
     argument.add_argument("--dirname", help="export directory")
     args = argument.parse_args()
 
-    parser = Parser()
+    filelock = threading.Lock()
 
     if not os.path.exists(args.dirname):
         os.mkdir(args.dirname)
 
-    url = start_url
-    while True:
-        parser.get_article(url)
+    total_page_num = get_page_number(start_url)
 
-        with open(os.path.join(args.dirname, args.filename), 'w') as outfile:
-            json.dump(parser.raw_data, outfile)
-        next_url = parser.get_previous_page_url(url)
-        if next_url == None:
-            break
-
-        url = base_url + next_url
+    for page in range(1, total_page_num + 1):
+        url = get_page_url(page)
+        while True:
+            try:
+                Parser(url, args.dirname, args.filename, filelock).start()
+                break
+            except:
+                continue
+        if page % 10 is 0:
+            time.sleep(1)
