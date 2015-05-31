@@ -6,6 +6,7 @@ import os
 import threading
 import re
 import time
+from pymongo import MongoClient
 
 class Parser(threading.Thread):
     def __init__(self, url, dirname, filename, filelock):
@@ -15,10 +16,11 @@ class Parser(threading.Thread):
         self.dirname = dirname
         self.filename = filename
         self.filelock = filelock
+        self.client = MongoClient()
 
     def run(self):
         self.get_article(self.url)
-        self.save_article(self.dirname, self.filename)
+        #self.save_article(self.dirname, self.filename)
         print 'Done: ' + self.url
 
     def get_article(self, url):
@@ -33,6 +35,8 @@ class Parser(threading.Thread):
             else:
                 continue
 
+        db = self.client.peen_movie
+        collections = db.articles
         html = req.read()
         soup = BeautifulSoup(html)
         articles = soup.find_all('div', class_='title')
@@ -41,7 +45,7 @@ class Parser(threading.Thread):
                 url = article.a.get('href')
                 title = article.a.contents[0]
                 title_utf8 = title.encode('utf-8')
-                self.raw_data.append((url, title_utf8))
+                collections.insert({'url': url, 'title': title_utf8})
 
     def save_article(self, dirname, filename):
         self.filelock.acquire()
