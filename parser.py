@@ -9,18 +9,13 @@ import time
 from pymongo import MongoClient
 
 class Parser(threading.Thread):
-    def __init__(self, url, dirname, filename, filelock):
+    def __init__(self, url):
         threading.Thread.__init__(self)
-        self.raw_data = []
         self.url = url
-        self.dirname = dirname
-        self.filename = filename
-        self.filelock = filelock
         self.client = MongoClient()
 
     def run(self):
         self.get_article(self.url)
-        #self.save_article(self.dirname, self.filename)
         print 'Done: ' + self.url
 
     def get_article(self, url):
@@ -45,15 +40,8 @@ class Parser(threading.Thread):
                 url = article.a.get('href')
                 title = article.a.contents[0]
                 title_utf8 = title.encode('utf-8')
-                collections.insert({'url': url, 'title': title_utf8})
-
-    def save_article(self, dirname, filename):
-        self.filelock.acquire()
-        with open(os.path.join(dirname, filename), 'a') as outfile:
-            json.dump(self.raw_data, outfile)
-            outfile.close()
-        self.filelock.release()
-
+                if collections.find({'url': url}).count() is 0:
+                    collections.insert({'url': url, 'title': title_utf8})
 
 def get_page_number(url):
     req = urllib2.urlopen(url)
@@ -76,24 +64,13 @@ def get_page_url(page):
 
 if __name__ == '__main__':
     start_url = 'https://www.ptt.cc/bbs/movie/index.html'
-
-    argument = argparse.ArgumentParser()
-    argument.add_argument("--filename", help="export filename")
-    argument.add_argument("--dirname", help="export directory")
-    args = argument.parse_args()
-
-    filelock = threading.Lock()
-
-    if not os.path.exists(args.dirname):
-        os.mkdir(args.dirname)
-
     total_page_num = get_page_number(start_url)
 
     for page in range(1, total_page_num + 1):
         url = get_page_url(page)
         while True:
             try:
-                Parser(url, args.dirname, args.filename, filelock).start()
+                Parser(url).start()
                 break
             except:
                 continue
