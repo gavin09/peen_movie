@@ -19,7 +19,7 @@ class Indexer:
             self.forward_index[keyword]['negative'] = list()
             self.forward_index[keyword]['others']   = list()
 
-        db = self.client['peen-movie']
+        db = self.client.peen_movie
         articles = db.articles
         for doc in articles.find({'title': {'$regex': '.*'+ keyword +'.*' }}):
             if '好雷'.decode('utf-8') in doc['title']:
